@@ -1,0 +1,366 @@
+---
+import { getCollection } from 'astro:content';
+
+const subjects = [
+  {
+    id: 'electronics',
+    name: '전자공학개론',
+    types: [
+      { id: 'national', name: '국가직' },
+      { id: 'local', name: '지방직' },
+      { id: 'assembly', name: '국회직' },
+      { id: 'military', name: '군무원' },
+    ],
+  },
+  {
+    id: 'wireless',
+    name: '무선공학개론',
+    types: [{ id: 'national', name: '국가직' }],
+  },
+  {
+    id: 'comm-theory',
+    name: '통신이론',
+    types: [{ id: 'local', name: '지방직' }],
+  },
+];
+
+const baseYears = Array.from({ length: 2026 - 2007 + 1 }, (_, i) => 2026 - i);
+
+// 직렬별 유효 연도 반환 함수 (지방직만 2007, 2008, 2013 제외)
+const getYearsForType = (typeId: string) => {
+  if (typeId === 'local') {
+    const excluded = [2007, 2008, 2013];
+    return baseYears.filter((yr) => !excluded.includes(yr));
+  }
+  return baseYears;
+};
+
+// Content Collections에서 등록된 모든 문제 가져오기
+const allExams = await getCollection('exams');
+
+// 클라이언트 사이드 검색을 위한 가벼운 데이터셋 구성
+const searchIndex = allExams.map((exam) => ({
+  id: exam.id || exam.slug,
+  title: exam.data.title,
+  year: exam.data.year,
+  examType: exam.data.examType,
+  questionNumber: exam.data.questionNumber,
+  subject: exam.data.subject,
+  chapter: exam.data.chapter || '',
+  body: exam.body || '',
+}));
+---
+
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>전기·전자·통신 공무원 기출문제 해설</title>
+    
+    <style>
+      :root {
+        --primary: #2563eb;
+        --bg-color: #f8fafc;
+        --card-bg: #ffffff;
+        --text-main: #0f172a;
+        --text-sub: #64748b;
+        --border-color: #e2e8f0;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        padding: 2rem 1rem;
+      }
+      .container { max-width: 900px; margin: 0 auto; }
+      header { text-align: center; margin-bottom: 2rem; }
+      header h1 { font-size: 1.8rem; font-weight: 800; color: #1e293b; }
+
+      /* 검색창 영역 */
+      .search-wrapper {
+        position: relative;
+        margin-bottom: 2rem;
+      }
+      .search-input {
+        width: 100%;
+        padding: 0.9rem 1.2rem;
+        font-size: 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--text-main);
+        outline: none;
+        transition: all 0.2s;
+      }
+      .search-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+
+      /* 검색 결과 영역 */
+      .search-results {
+        display: none;
+        margin-bottom: 2rem;
+      }
+      .search-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      .search-count {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-sub);
+      }
+      .search-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+      }
+      .search-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.65rem 0.5rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        text-decoration: none;
+        color: #334155;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.15s;
+      }
+      .search-item:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+      .no-results {
+        padding: 2rem;
+        text-align: center;
+        color: var(--text-sub);
+        background: var(--card-bg);
+        border-radius: 10px;
+        border: 1px dashed var(--border-color);
+      }
+
+      /* 과목 탭 */
+      .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
+      .tab-btn {
+        background: var(--card-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.8rem;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        color: var(--text-sub);
+      }
+      .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+      /* 시험 구분 서브 탭 */
+      .type-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+      .type-btn {
+        background: #e2e8f0;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: #475569;
+      }
+      .type-btn.active { background: #1e293b; color: white; }
+
+      .panel { display: none; }
+      .panel.active { display: block; }
+      
+      .year-list { display: flex; flex-direction: column; gap: 1rem; }
+      .year-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+      }
+      .year-title { font-weight: 700; color: #334155; margin-bottom: 0.75rem; display: block; }
+      .question-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.4rem; }
+      .q-btn {
+        display: flex; align-items: center; justify-content: center;
+        height: 36px; background: #f1f5f9; color: #475569;
+        text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.9rem;
+      }
+      .q-btn:hover { background: var(--primary); color: white; }
+
+      @media (max-width: 640px) {
+        .tabs { grid-template-columns: 1fr; }
+        .question-grid { grid-template-columns: repeat(5, 1fr); }
+        .search-grid { grid-template-columns: repeat(2, 1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>⚡ 기출문제 풀이 & 해설</h1>
+        <p style="color: var(--text-sub); margin-top: 0.4rem;">07~26년도 직렬별 기출 풀이집</p>
+      </header>
+
+      <!-- 키워드 검색창 -->
+      <div class="search-wrapper">
+        <input 
+          type="text" 
+          id="search-input" 
+          class="search-input" 
+          placeholder="키워드 검색 (예: 테브난, OP-Amp, 공진, 2018 국가직)" 
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- 검색 결과 표시 패널 -->
+      <div id="search-results" class="search-results">
+        <div class="search-header">
+          <span id="search-count" class="search-count"></span>
+        </div>
+        <div id="search-grid" class="search-grid"></div>
+        <div id="no-results" class="no-results" style="display: none;">검색 결과가 없습니다.</div>
+      </div>
+
+      <!-- 연도별 기출문제 목록 -->
+      <div id="year-view">
+        <!-- 과목 탭 -->
+        <nav class="tabs">
+          {subjects.map((sub, idx) => (
+            <button class={`tab-btn ${idx === 0 ? 'active' : ''}`} data-subject={sub.id}>
+              {sub.name}
+            </button>
+          ))}
+        </nav>
+
+        <!-- 과목별 컨텐츠 영역 -->
+        {subjects.map((sub, sIdx) => (
+          <section id={`subject-${sub.id}`} class={`panel ${sIdx === 0 ? 'active' : ''}`}>
+            <!-- 시험 구분 서브 탭 -->
+            <div class="type-tabs">
+              {sub.types.map((t, tIdx) => (
+                <button 
+                  class={`type-btn ${tIdx === 0 ? 'active' : ''}`} 
+                  data-target={`grid-${sub.id}-${t.id}`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+
+            <!-- 연도별 문제 그리드 -->
+            {sub.types.map((t, tIdx) => (
+              <div id={`grid-${sub.id}-${t.id}`} class={`panel ${tIdx === 0 ? 'active' : ''}`}>
+                <div class="year-list">
+                  {getYearsForType(t.id).map((yr) => (
+                    <div class="year-card">
+                      <span class="year-title">{yr}년도 {sub.name} ({t.name})</span>
+                      <div class="question-grid">
+                        {Array.from({ length: 20 }, (_, i) => i + 1).map((qNum) => {
+                          const paddedQ = String(qNum).padStart(2, '0');
+                          return (
+                            <a href={`/exams/${sub.id}/${t.id}/${yr}-${paddedQ}`} class="q-btn">
+                              {qNum}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+    </div>
+
+    <!-- 검색용 데이터 전달 -->
+    <script define:vars={{ searchIndex }}>
+      window.__SEARCH_INDEX__ = searchIndex;
+    </script>
+
+    <script>
+      // 검색 로직
+      const searchInput = document.getElementById('search-input');
+      const searchResults = document.getElementById('search-results');
+      const searchGrid = document.getElementById('search-grid');
+      const searchCount = document.getElementById('search-count');
+      const noResults = document.getElementById('no-results');
+      const yearView = document.getElementById('year-view');
+
+      const data = window.__SEARCH_INDEX__ || [];
+
+      searchInput?.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+
+        if (!query) {
+          if (searchResults) searchResults.style.display = 'none';
+          if (yearView) yearView.style.display = 'block';
+          return;
+        }
+
+        if (yearView) yearView.style.display = 'none';
+        if (searchResults) searchResults.style.display = 'block';
+
+        const keywords = query.split(/\s+/);
+        const filtered = data.filter((item) => {
+          const targetText = `${item.title} ${item.year} ${item.examType} ${item.questionNumber} ${item.subject} ${item.chapter} ${item.body}`.toLowerCase();
+          return keywords.every((kw) => targetText.includes(kw));
+        });
+
+        if (filtered.length === 0) {
+          if (searchGrid) searchGrid.innerHTML = '';
+          if (searchCount) searchCount.textContent = '검색 결과 0건';
+          if (noResults) noResults.style.display = 'block';
+        } else {
+          if (noResults) noResults.style.display = 'none';
+          if (searchCount) searchCount.textContent = `검색 결과 ${filtered.length}건`;
+          
+          if (searchGrid) {
+            searchGrid.innerHTML = filtered
+              .map(
+                (q) => `
+                  <a href="/exams/${q.id}" class="search-item">
+                    ${q.year} ${q.examType} ${q.questionNumber}번
+                  </a>
+                `
+              )
+              .join('');
+          }
+        }
+      });
+
+      // 과목 탭 전환
+      const subBtns = document.querySelectorAll('.tab-btn');
+      subBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          subBtns.forEach((b) => b.classList.remove('active'));
+          document.querySelectorAll('section.panel').forEach((p) => p.classList.remove('active'));
+          btn.classList.add('active');
+          const subId = btn.getAttribute('data-subject');
+          document.getElementById(`subject-${subId}`)?.classList.add('active');
+        });
+      });
+
+      // 직렬 서브탭 전환
+      const typeBtns = document.querySelectorAll('.type-btn');
+      typeBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const parent = btn.closest('section');
+          parent?.querySelectorAll('.type-btn').forEach((b) => b.classList.remove('active'));
+          parent?.querySelectorAll('div.panel').forEach((p) => p.classList.remove('active'));
+          btn.classList.add('active');
+          const targetId = btn.getAttribute('data-target');
+          if (targetId) document.getElementById(targetId)?.classList.add('active');
+        });
+      });
+    </script>
+  </body>
+</html>

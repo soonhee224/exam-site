@@ -1,0 +1,313 @@
+---
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const exams = await getCollection('exams');
+
+  // 등록된 모든 경로를 Set으로 관리
+  const existingIds = new Set(
+    exams.map((e) => e.id.replace(/\\/g, '/').replace(/\.(md|mdx)$/, ''))
+  );
+
+  return exams.map((entry) => {
+    const cleanId = entry.id.replace(/\\/g, '/').replace(/\.(md|mdx)$/, '');
+    const parts = cleanId.split('/');
+    const filePart = parts[parts.length - 1];
+    const basePath = parts.slice(0, parts.length - 1).join('/');
+
+    const [yearStr, qNumStr] = filePart.split('-');
+    const currentYear = parseInt(yearStr, 10);
+    const currentQNum = parseInt(qNumStr, 10);
+
+    const prevQNum = currentQNum > 1 ? currentQNum - 1 : null;
+    const rawPrevSlug = prevQNum
+      ? `${basePath}/${currentYear}-${String(prevQNum).padStart(2, '0')}`
+      : null;
+    // 실제 파일이 존재하는 경우에만 이동 링크 활성화
+    const prevSlug = rawPrevSlug && existingIds.has(rawPrevSlug) ? rawPrevSlug : null;
+
+    const nextQNum = currentQNum < 20 ? currentQNum + 1 : null;
+    const rawNextSlug = nextQNum
+      ? `${basePath}/${currentYear}-${String(nextQNum).padStart(2, '0')}`
+      : null;
+    // 실제 파일이 존재하는 경우에만 이동 링크 활성화
+    const nextSlug = rawNextSlug && existingIds.has(rawNextSlug) ? rawNextSlug : null;
+
+    return {
+      params: { slug: cleanId },
+      props: { entry, prevSlug, nextSlug, prevQNum, nextQNum },
+    };
+  });
+}
+
+const { entry, prevSlug, nextSlug, prevQNum, nextQNum } = Astro.props;
+const { Content } = await render(entry);
+const { subject, examType, year, questionNumber, title, answer, options, explanation, chapter } = entry.data;
+
+const pageTitle = `${year}년 ${examType} ${subject} ${questionNumber}번 기출 해설`;
+// 💡 마크다운 이미지 문법(![...](...))을 HTML <img> 태그로 변환하고 줄바꿈을 처리하는 함수
+function formatExplanation(text: string = '') {
+  if (!text) return '';
+  
+  // 1. ![alt](url) -> <img> 태그 변환
+  let parsed = text.replace(/!\[(.*?)\]\((.*?)\)/g, (_, alt, src) => {
+    return `<img src="${src}" alt="${alt}" style="max-width: 280px; width: 100%; height: auto; display: block; margin: 1.25rem auto; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff; padding: 0.5rem;" />`;
+  });
+
+  // 2. 줄바꿈(\n)을 <br />로 변환
+  return parsed.trim().replace(/\n/g, '<br />');
+}
+
+const formattedExplanation = formatExplanation(explanation);
+// 💡 4지 선지(options) 안의 마크다운 이미지(![alt](src))를 HTML 태그로 변환하는 함수
+function formatOption(text: string = '') {
+  if (!text) return '';
+  return text.replace(/!\[(.*?)\]\((.*?)\)/g, (_, alt, src) => {
+    return `<img src="${src}" alt="${alt}" style="max-height: 80px; width: auto; max-width: 100%; display: inline-block; vertical-align: middle; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #ffffff; padding: 4px; margin: 2px 0;" />`;
+  });
+}
+
+const formattedOptions = options.map((opt) => formatOption(opt));
+
+---
+
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+    />
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false}
+      ]
+    });">
+  </script>
+
+    <style>
+      :root {
+        --primary: #2563eb;
+        --bg-color: #f8fafc;
+        --card-bg: #ffffff;
+        --border-color: #e2e8f0;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: var(--bg-color);
+        color: #0f172a;
+        line-height: 1.7;
+        padding: 1.5rem 1rem 4rem;
+      }
+      .container { max-width: 800px; margin: 0 auto; }
+      
+      .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+      .badge { font-size: 0.8rem; padding: 0.25rem 0.6rem; border-radius: 9999px; background-color: #e0e7ff; color: #3730a3; font-weight: 600; margin-left: 0.3rem; }
+      
+      .exam-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+      .exam-header { border-bottom: 2px solid #f1f5f9; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+      .exam-header h1 { font-size: 1.4rem; font-weight: 800; color: #1e293b; margin-bottom: 0.3rem; }
+      
+      /* 1. 문제 지문 */
+      .question-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 1.5rem; line-height: 1.8; }
+
+      /* 2. 선지 목록 */
+      .options-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+      .option-btn {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        background: #f8fafc;
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        font-size: 1rem;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .option-btn:hover { border-color: #93c5fd; background: #eff6ff; }
+      .opt-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        background: #e2e8f0;
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+      }
+
+      /* 정답/오답 클릭 상태 */
+      .option-btn.correct {
+        border-color: #10b981 !important;
+        background-color: #ecfdf5 !important;
+        color: #065f46 !important;
+      }
+      .option-btn.correct .opt-num { background: #10b981; color: white; }
+
+      .option-btn.wrong {
+        border-color: #ef4444 !important;
+        background-color: #fef2f2 !important;
+        color: #991b1b !important;
+      }
+      .option-btn.wrong .opt-num { background: #ef4444; color: white; }
+
+      /* 3. 피드백 메시지 바 */
+      .feedback-bar {
+        display: none;
+        padding: 0.9rem;
+        border-radius: 8px;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        text-align: center;
+      }
+      .feedback-bar.correct-msg { display: block; background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+      .feedback-bar.wrong-msg { display: block; background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+
+      /* 4. 해설 영역 */
+      .answer-section { border: 2px solid #e0e7ff; border-radius: 10px; overflow: hidden; margin-top: 1rem; }
+      .toggle-summary { padding: 1rem 1.25rem; font-weight: 700; color: var(--primary); cursor: pointer; background-color: #eff6ff; user-select: none; }
+      .toggle-content { padding: 1.5rem; background: #fff; border-top: 1px solid #e0e7ff; }
+      .answer-badge { display: inline-block; background: #fee2e2; color: #b91c1c; padding: 0.2rem 0.75rem; border-radius: 6px; font-weight: 800; margin-bottom: 0.75rem; }
+
+      /* 하단 네비게이션 */
+      .bottom-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; }
+      .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0.8rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; text-decoration: none; font-weight: 600; color: #334155; }
+      .nav-btn:hover { background: var(--primary); color: #fff; }
+      .nav-btn.disabled { opacity: 0.4; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="top-nav">
+        <a href="/" style="color: #64748b; text-decoration: none; font-weight: 600;">← 전체 문제 목록</a>
+        <div>
+          <span class="badge">{subject}</span>
+          <span class="badge" style="background:#fef3c7; color:#92400e;">{examType}</span>
+          {chapter && <span class="badge" style="background:#dcfce7; color:#166534;">{chapter}</span>}
+        </div>
+      </nav>
+
+      <main class="exam-card">
+        <header class="exam-header">
+          <h1>{title}</h1>
+          <p style="font-size: 0.9rem; color: #64748b;">{year}년도 시행 • {questionNumber}번 문항</p>
+        </header>
+
+        <!-- [순서 1] 문제 지문 -->
+        <article class="question-text">
+          <Content />
+        </article>
+
+        <!-- [순서 2] 4지 선지 선택 영역 -->
+        <div class="options-list" data-correct={answer}>
+          {formattedOptions.map((optHtml, idx) => (
+            <button class="option-btn" data-choice={idx + 1}>
+              <span class="opt-num">{idx + 1}</span>
+              <span set:html={optHtml} />
+            </button>
+          ))}
+        </div>
+
+        <!-- [순서 3] 정오답 피드백 메시지 바 -->
+        <div id="feedback" class="feedback-bar"></div>
+
+        <!-- [순서 4] 정답 및 상세 해설 -->
+        <details id="explanation-box" class="answer-section">
+          <summary class="toggle-summary">💡 정답 및 상세 해설 확인하기</summary>
+          <div class="toggle-content">
+            <span class="answer-badge">정답: {answer}번</span>
+            {formattedExplanation ? (
+              <div 
+                class="explanation-text" 
+                set:html={formattedExplanation} 
+                style="margin-top: 0.8rem; color: #334155; line-height: 1.8; font-size: 0.98rem;"
+              />
+            ) : (
+              <p style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem;">
+                등록된 상세 해설이 없습니다.
+              </p>
+            )}
+          </div>
+        </details>
+      </main>
+
+      <!-- 네비게이션 -->
+      <nav class="bottom-nav">
+        {prevSlug ? <a href={`/exams/${prevSlug}`} class="nav-btn">← {prevQNum}번</a> : <span class="nav-btn disabled">← 처음</span>}
+        <a href="/" class="nav-btn" style="flex: 0.5;">목록</a>
+        {nextSlug ? <a href={`/exams/${nextSlug}`} class="nav-btn">{nextQNum}번 →</a> : <span class="nav-btn disabled">끝 →</span>}
+      </nav>
+    </div>
+
+<script>
+      // 1. 수식 강제 렌더링 함수
+      function renderMath() {
+        if (typeof (window as any).renderMathInElement === 'function') {
+          (window as any).renderMathInElement(document.body, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false },
+            ],
+            throwOnError: false,
+          });
+        }
+      }
+
+      // 페이지 로드 시 1회 실행
+      document.addEventListener('DOMContentLoaded', renderMath);
+      window.addEventListener('load', renderMath);
+
+      const optionsContainer = document.querySelector('.options-list') as HTMLElement;
+      const optionBtns = document.querySelectorAll('.option-btn');
+      const feedback = document.getElementById('feedback') as HTMLElement;
+      const explanationBox = document.getElementById('explanation-box') as HTMLDetailsElement;
+
+      const correctAnswer = parseInt(optionsContainer?.dataset.correct || '0', 10);
+
+      // 2. 해설 토글(details)을 열 때 수식 재렌더링
+      if (explanationBox) {
+        explanationBox.addEventListener('toggle', () => {
+          if (explanationBox.open) {
+            setTimeout(renderMath, 50);
+          }
+        });
+      }
+
+      // 3. 선지 클릭 채점
+      optionBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const userChoice = parseInt((btn as HTMLElement).dataset.choice || '0', 10);
+
+          optionBtns.forEach((b) => b.classList.remove('correct', 'wrong'));
+          feedback.className = 'feedback-bar';
+
+          if (userChoice === correctAnswer) {
+            btn.classList.add('correct');
+            feedback.textContent = '🎉 정답입니다! 아래 해설을 확인해 보세요.';
+            feedback.classList.add('correct-msg');
+            if (explanationBox) {
+              explanationBox.open = true;
+              setTimeout(renderMath, 50);
+            }
+          } else {
+            btn.classList.add('wrong');
+            feedback.textContent = '❌ 오답입니다. 다시 한번 풀어보세요!';
+            feedback.classList.add('wrong-msg');
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
