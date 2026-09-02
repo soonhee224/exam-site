@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 
+// 완성된 과목과 직렬만 구성 (국회직, 군무원, 무선공학개론, 통신이론 제외)
 const subjects = [
   {
     id: 'electronics',
@@ -8,19 +9,7 @@ const subjects = [
     types: [
       { id: 'national', name: '국가직' },
       { id: 'local', name: '지방직' },
-      { id: 'assembly', name: '국회직' },
-      { id: 'military', name: '군무원' },
     ],
-  },
-  {
-    id: 'wireless',
-    name: '무선공학개론',
-    types: [{ id: 'national', name: '국가직' }],
-  },
-  {
-    id: 'comm-theory',
-    name: '통신이론',
-    types: [{ id: 'local', name: '지방직' }],
   },
 ];
 
@@ -147,9 +136,10 @@ const searchIndex = allExams.map((exam) => ({
         border: 1px dashed var(--border-color);
       }
 
-      /* 과목 탭 */
-      .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
+      /* 과목 탭 (과목이 1개일 때도 자연스럽게 표시) */
+      .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
       .tab-btn {
+        flex: 1;
         background: var(--card-bg);
         border: 2px solid var(--border-color);
         border-radius: 10px;
@@ -194,8 +184,19 @@ const searchIndex = allExams.map((exam) => ({
       }
       .q-btn:hover { background: var(--primary); color: white; }
 
+      /* 푸터 스타일 */
+      .site-footer {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--text-sub);
+      }
+      .site-footer .links { margin-bottom: 0.5rem; }
+      .site-footer a { color: var(--primary); text-decoration: none; }
+
       @media (max-width: 640px) {
-        .tabs { grid-template-columns: 1fr; }
         .question-grid { grid-template-columns: repeat(5, 1fr); }
         .search-grid { grid-template-columns: repeat(2, 1fr); }
       }
@@ -279,6 +280,13 @@ const searchIndex = allExams.map((exam) => ({
           </section>
         ))}
       </div>
+
+      <footer class="site-footer">
+        <p class="links">
+          <a href="/privacy">개인정보처리방침</a>
+        </p>
+        <p class="copyright">© 2026 전기·전자·통신 공무원 기출 해설. All rights reserved.</p>
+      </footer>
     </div>
 
     <!-- 검색용 데이터 전달 -->
@@ -362,11 +370,5 @@ const searchIndex = allExams.map((exam) => ({
         });
       });
     </script>
-      <footer class="site-footer">
-        <p class="links">
-          <a href="/privacy">개인정보처리방침</a>
-        </p>
-        <p class="copyright">© 2026 전기·전자·통신 공무원 기출 해설. All rights reserved.</p>
-      </footer>
   </body>
 </html>
