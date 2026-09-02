@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tongsin.org/sitemap-index.xml
