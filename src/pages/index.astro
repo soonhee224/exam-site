@@ -1,7 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 
-// 완성된 과목과 직렬만 구성 (국회직, 군무원, 무선공학개론, 통신이론 제외)
+// 전자공학개론(국가직, 지방직) 및 무선공학개론(국가직) 구성
 const subjects = [
   {
     id: 'electronics',
@@ -11,12 +11,24 @@ const subjects = [
       { id: 'local', name: '지방직' },
     ],
   },
+  {
+    id: 'wireless',
+    name: '무선공학개론',
+    types: [
+      { id: 'national', name: '국가직' },
+    ],
+  },
 ];
 
 const baseYears = Array.from({ length: 2026 - 2007 + 1 }, (_, i) => 2026 - i);
 
-// 직렬별 유효 연도 반환 함수 (지방직만 2007, 2008, 2013 제외)
-const getYearsForType = (typeId: string) => {
+// 과목 및 직렬별 유효 연도 반환 함수
+const getYearsForSubjectAndType = (subjectId: string, typeId: string) => {
+  // 무선공학개론은 2026년도 문제만 우선 노출
+  if (subjectId === 'wireless') {
+    return [2026];
+  }
+  // 전자공학개론 지방직은 2007, 2008, 2013 제외
   if (typeId === 'local') {
     const excluded = [2007, 2008, 2013];
     return baseYears.filter((yr) => !excluded.includes(yr));
@@ -137,7 +149,7 @@ const searchIndex = allExams.map((exam) => ({
         border: 1px dashed var(--border-color);
       }
 
-      /* 과목 탭 (과목이 1개일 때도 자연스럽게 표시) */
+      /* 과목 탭 */
       .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
       .tab-btn {
         flex: 1;
@@ -260,7 +272,7 @@ const searchIndex = allExams.map((exam) => ({
             {sub.types.map((t, tIdx) => (
               <div id={`grid-${sub.id}-${t.id}`} class={`panel ${tIdx === 0 ? 'active' : ''}`}>
                 <div class="year-list">
-                  {getYearsForType(t.id).map((yr) => (
+                  {getYearsForSubjectAndType(sub.id, t.id).map((yr) => (
                     <div class="year-card">
                       <span class="year-title">{yr}년도 {sub.name} ({t.name})</span>
                       <div class="question-grid">
