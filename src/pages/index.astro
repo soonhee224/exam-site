@@ -26,7 +26,7 @@ const baseYears = Array.from({ length: 2026 - 2007 + 1 }, (_, i) => 2026 - i);
 const getYearsForSubjectAndType = (subjectId: string, typeId: string) => {
   // 무선공학개론은 2026년도 및 2025년도 문제 노출
   if (subjectId === 'wireless') {
-    return [2026, 2025];
+    return [2026, 2025, 2024];
   }
   // 전자공학개론 지방직은 2007, 2008, 2013 제외
   if (typeId === 'local') {
