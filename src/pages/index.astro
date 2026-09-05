@@ -118,7 +118,7 @@ const searchIndex = allExams.map((exam) => ({
       }
       .search-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr); /* 4열 -> 3열로 조정하여 텍스트 여유 공간 확보 */
         gap: 0.5rem;
       }
       .search-item {
@@ -211,7 +211,7 @@ const searchIndex = allExams.map((exam) => ({
 
       @media (max-width: 640px) {
         .question-grid { grid-template-columns: repeat(5, 1fr); }
-        .search-grid { grid-template-columns: repeat(2, 1fr); }
+        .search-grid { grid-template-columns: 1fr; } /* 모바일에서는 1열로 배치하여 한 줄에 깔끔하게 표시 */
       }
     </style>
   </head>
@@ -349,7 +349,7 @@ const searchIndex = allExams.map((exam) => ({
               .map(
                 (q) => `
                   <a href="/exams/${q.id}" class="search-item">
-                    ${q.year} ${q.examType} ${q.questionNumber}번
+                    ${q.year} ${q.examType} ${q.subject} ${q.questionNumber}번
                   </a>
                 `
               )
