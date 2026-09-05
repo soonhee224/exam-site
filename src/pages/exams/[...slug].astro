@@ -188,32 +188,45 @@ const formattedOptions = options.map((opt) => formatOption(opt));
       .nav-btn:hover { background: var(--primary); color: #fff; }
       .nav-btn.disabled { opacity: 0.4; pointer-events: none; }
     </style>
-    /* --- 기존 <style> 태그 끝난 직후 추가 --- */
-    <style is:global>
-      /* 1. KaTeX 독립 수식($$...$$) 모바일 가로 스크롤 처리 */
-      .katex-display {
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        padding: 0.5rem 0 !important;
-        margin: 0.75rem 0 !important;
-        max-width: 100% !important;
-        -webkit-overflow-scrolling: touch;
-      }
+<style is:global>
+  /* 해설 텍스트 영역 기본 반응형 처리 */
+  .explanation-text {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
 
-      /* 2. 인라인 수식($...$)이 길어서 카드를 뚫고 나가는 현상 방지 */
-      .katex {
-        max-width: 100%;
-      }
+  /* 1. 디스플레이 수식($$...$$) 모바일 가로 스크롤 허용 */
+  .explanation-text .katex-display,
+  .question-text .katex-display {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0.5rem 0 !important;
+    margin: 0.75rem 0 !important;
+    max-width: 100% !important;
+    -webkit-overflow-scrolling: touch;
+  }
 
-      /* 3. 모바일 스크롤바 얇고 깔끔하게 커스텀 */
-      .katex-display::-webkit-scrollbar {
-        height: 4px;
-      }
-      .katex-display::-webkit-scrollbar-thumb {
-        background-color: #cbd5e1;
-        border-radius: 4px;
-      }
-    </style>
+  /* 2. 인라인 수식($...$)이 너무 길 때 화면 밖으로 밀려나지 않고 줄바꿈 허용 */
+  .katex {
+    max-width: 100%;
+  }
+  .katex-html {
+    white-space: normal !important;
+  }
+  .katex-display .katex-html {
+    white-space: nowrap !important; /* 디스플레이 수식은 수식 형태 유지하며 스크롤 */
+  }
+
+  /* 3. 모바일 스크롤바 디자인 */
+  .katex-display::-webkit-scrollbar {
+    height: 4px;
+  }
+  .katex-display::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+  }
+</style>
   </head>
   <body>
     <div class="container">
