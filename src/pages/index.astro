@@ -369,7 +369,7 @@ const searchIndex = allExams.map((exam) => ({
     </script>
 
     <script>
-// 검색 로직
+      // 요소 가져오기
       const searchInput = document.getElementById('search-input');
       const searchBtn = document.getElementById('search-btn');
       const searchResults = document.getElementById('search-results');
@@ -380,17 +380,28 @@ const searchIndex = allExams.map((exam) => ({
 
       const data = window.__SEARCH_INDEX__ || [];
 
-      // 1. 검색 실행 함수 분리
-      function performSearch() {
+      // 검색 실행 함수
+      function performSearch(isInitialLoad = false) {
         const query = searchInput?.value.trim().toLowerCase();
 
-        // 검색어가 비어있을 때 원래 연도별 목록 복원
+        // 1. 검색어가 비어있는 경우
         if (!query) {
           if (searchResults) searchResults.style.display = 'none';
           if (yearView) yearView.style.display = 'block';
+          // URL에서 쿼리스트링 제거
+          if (!isInitialLoad) {
+            history.replaceState(null, '', window.location.pathname);
+          }
           return;
         }
 
+        // 2. URL에 검색어 동기화 (?q=검색어)
+        if (!isInitialLoad) {
+          const newUrl = `${window.location.pathname}?q=${encodeURIComponent(searchInput.value.trim())}`;
+          history.replaceState(null, '', newUrl);
+        }
+
+        // 화면 전환
         if (yearView) yearView.style.display = 'none';
         if (searchResults) searchResults.style.display = 'block';
 
@@ -422,19 +433,43 @@ const searchIndex = allExams.map((exam) => ({
         }
       }
 
-      // 2. 엔터 키를 눌렀을 때만 검색 실행
+      // 엔터 키 입력 시 검색
       searchInput?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
           performSearch();
         }
       });
-      searchBtn?.addEventListener('click', performSearch);
-      // 3. 입력창의 내용을 전부 지웠을 때는 바로 메인 화면 목록 복원
+
+      // 검색 버튼 클릭 시 검색
+      searchBtn?.addEventListener('click', () => performSearch());
+
+      // 검색어를 지웠을 때 URL 및 화면 초기화
       searchInput?.addEventListener('input', (e) => {
         if (!e.target.value.trim()) {
           if (searchResults) searchResults.style.display = 'none';
           if (yearView) yearView.style.display = 'block';
+          history.replaceState(null, '', window.location.pathname);
+        }
+      });
+
+      // 뒤로가기 시 검색 상태 복원 (URL 쿼리스트링 감지)
+      window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const initialQuery = params.get('q');
+        if (initialQuery && searchInput) {
+          searchInput.value = initialQuery;
+          performSearch(true);
+        }
+      });
+
+      // 브라우저 뒤로가기/앞으로가기 히스토리 변동 감지
+      window.addEventListener('popstate', () => {
+        const params = new URLSearchParams(window.location.search);
+        const currentQuery = params.get('q') || '';
+        if (searchInput) {
+          searchInput.value = currentQuery;
+          performSearch(true);
         }
       });
 
