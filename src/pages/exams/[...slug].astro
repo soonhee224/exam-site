@@ -188,6 +188,32 @@ const formattedOptions = options.map((opt) => formatOption(opt));
       .nav-btn:hover { background: var(--primary); color: #fff; }
       .nav-btn.disabled { opacity: 0.4; pointer-events: none; }
     </style>
+    /* --- 기존 <style> 태그 끝난 직후 추가 --- */
+    <style is:global>
+      /* 1. KaTeX 독립 수식($$...$$) 모바일 가로 스크롤 처리 */
+      .katex-display {
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        padding: 0.5rem 0 !important;
+        margin: 0.75rem 0 !important;
+        max-width: 100% !important;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* 2. 인라인 수식($...$)이 길어서 카드를 뚫고 나가는 현상 방지 */
+      .katex {
+        max-width: 100%;
+      }
+
+      /* 3. 모바일 스크롤바 얇고 깔끔하게 커스텀 */
+      .katex-display::-webkit-scrollbar {
+        height: 4px;
+      }
+      .katex-display::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 4px;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
