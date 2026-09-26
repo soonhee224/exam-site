@@ -1,7 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 
-// 전자공학개론(국가직, 지방직) 및 무선공학개론(국가직) 구성
+// 전자공학개론(국가직, 지방직), 무선공학개론(국가직), 통신이론(지방직) 구성
 const subjects = [
   {
     id: 'electronics',
@@ -18,18 +18,29 @@ const subjects = [
       { id: 'national', name: '국가직' },
     ],
   },
+  {
+    id: 'communication',
+    name: '통신이론',
+    types: [
+      { id: 'local', name: '지방직' },
+    ],
+  },
 ];
 
 const baseYears = Array.from({ length: 2026 - 2007 + 1 }, (_, i) => 2026 - i);
 
 // 과목 및 직렬별 유효 연도 반환 함수
 const getYearsForSubjectAndType = (subjectId: string, typeId: string) => {
-  // 무선공학개론은 2026년도 및 2025년도 문제 노출
+  // 무선공학개론 연도 목록
   if (subjectId === 'wireless') {
     return [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009, 2008, 2007];
   }
+  // 통신이론 지방직 연도 목록 (2007~2026)
+  if (subjectId === 'communication') {
+    return [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2011, 2010, 2009];
+  }
   // 전자공학개론 지방직은 2007, 2008, 2013 제외
-  if (typeId === 'local') {
+  if (subjectId === 'electronics' && typeId === 'local') {
     const excluded = [2007, 2008, 2013];
     return baseYears.filter((yr) => !excluded.includes(yr));
   }
@@ -78,14 +89,12 @@ const searchIndex = allExams.map((exam) => ({
       .container { max-width: 900px; margin: 0 auto; }
       header { text-align: center; margin-bottom: 2rem; }
       header h1 {
-        /* 모바일 화면 폭에 맞춰 1.25rem ~ 1.8rem 사이로 자동 스케일링 */
         font-size: clamp(1.25rem, 4.5vw, 1.8rem);
         font-weight: 800;
         line-height: 1.3;
-        white-space: nowrap; /* 좁은 모바일 화면에서도 절대 줄바꿈되지 않도록 강제 */
+        white-space: nowrap;
       }
 
-      /* 메인 화면 링크 스타일 */
       .site-title {
         color: #1e293b;
         text-decoration: none;
@@ -93,70 +102,64 @@ const searchIndex = allExams.map((exam) => ({
         transition: color 0.15s ease;
       }
       .site-title:hover {
-        color: var(--primary); /* 마우스 올렸을 때 은은한 파란색 전환 */
+        color: var(--primary);
       }
 
-/* 검색창 컨테이너 */
-.search-wrapper {
-  display: flex;
-  align-items: stretch; /* 검색창과 버튼의 높이를 완벽히 동일하게 맞춤 */
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-}
+      .search-wrapper {
+        display: flex;
+        align-items: stretch;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+      }
 
-    /* 검색 입력창 */
-    .search-input {
-      flex: 1;
-      padding: 0.85rem 1.2rem;
-      font-size: 1rem;
-      border: 2px solid var(--border-color);
-      border-radius: 12px;
-      background: var(--card-bg);
-      color: var(--text-main);
-      outline: none;
-      transition: all 0.2s;
-    }
-    .search-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    }
+      .search-input {
+        flex: 1;
+        padding: 0.85rem 1.2rem;
+        font-size: 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--text-main);
+        outline: none;
+        transition: all 0.2s;
+      }
+      .search-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
 
-    /* 파란색 검색 버튼 (검색창과 동일한 곡률 및 높이) */
-    .search-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 1.5rem;
-      font-size: 1rem;
-      font-weight: 700;
-      color: #ffffff;
-      background-color: var(--primary); /* 기본 파란색 (#2563eb) */
-      border: 2px solid var(--primary);
-      border-radius: 12px;
-      cursor: pointer;
-      white-space: nowrap;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      transition: all 0.15s ease-in-out;
-    }
-
-    /* 마우스 호버 및 클릭 액션 */
-    .search-btn:hover {
-      background-color: #1d4ed8; /* 약간 더 짙은 파란색 */
-      border-color: #1d4ed8;
-    }
-    .search-btn:active {
-      transform: scale(0.97);
-    }
-
-    /* 모바일 화면 여백 최적화 */
-    @media (max-width: 640px) {
       .search-btn {
-        padding: 0 1.1rem;
-        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 1.5rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #ffffff;
+        background-color: var(--primary);
+        border: 2px solid var(--primary);
+        border-radius: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        transition: all 0.15s ease-in-out;
       }
-    }
 
-      /* 검색 결과 영역 */
+      .search-btn:hover {
+        background-color: #1d4ed8;
+        border-color: #1d4ed8;
+      }
+      .search-btn:active {
+        transform: scale(0.97);
+      }
+
+      @media (max-width: 640px) {
+        .search-btn {
+          padding: 0 1.1rem;
+          font-size: 0.95rem;
+        }
+      }
+
       .search-results {
         display: none;
         margin-bottom: 2rem;
@@ -174,7 +177,7 @@ const searchIndex = allExams.map((exam) => ({
       }
       .search-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr); /* 4열 -> 3열로 조정하여 텍스트 여유 공간 확보 */
+        grid-template-columns: repeat(3, 1fr);
         gap: 0.5rem;
       }
       .search-item {
@@ -205,7 +208,6 @@ const searchIndex = allExams.map((exam) => ({
         border: 1px dashed var(--border-color);
       }
 
-      /* 과목 탭 */
       .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
       .tab-btn {
         flex: 1;
@@ -220,7 +222,6 @@ const searchIndex = allExams.map((exam) => ({
       }
       .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-      /* 시험 구분 서브 탭 */
       .type-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
       .type-btn {
         background: #e2e8f0;
@@ -253,7 +254,6 @@ const searchIndex = allExams.map((exam) => ({
       }
       .q-btn:hover { background: var(--primary); color: white; }
 
-      /* 푸터 스타일 */
       .site-footer {
         margin-top: 3rem;
         padding-top: 1.5rem;
@@ -267,7 +267,7 @@ const searchIndex = allExams.map((exam) => ({
 
       @media (max-width: 640px) {
         .question-grid { grid-template-columns: repeat(5, 1fr); }
-        .search-grid { grid-template-columns: 1fr; } /* 모바일에서는 1열로 배치하여 한 줄에 깔끔하게 표시 */
+        .search-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -280,7 +280,6 @@ const searchIndex = allExams.map((exam) => ({
         <p style="color: var(--text-sub); margin-top: 0.4rem;">07~26년도 직렬별 기출 풀이집</p>
       </header>
 
-      <!-- 키워드 검색창 -->
       <div class="search-wrapper">
         <input 
           type="text" 
@@ -294,7 +293,6 @@ const searchIndex = allExams.map((exam) => ({
         </button>
       </div>
 
-      <!-- 검색 결과 표시 패널 -->
       <div id="search-results" class="search-results">
         <div class="search-header">
           <span id="search-count" class="search-count"></span>
@@ -303,9 +301,7 @@ const searchIndex = allExams.map((exam) => ({
         <div id="no-results" class="no-results" style="display: none;">검색 결과가 없습니다.</div>
       </div>
 
-      <!-- 연도별 기출문제 목록 -->
       <div id="year-view">
-        <!-- 과목 탭 -->
         <nav class="tabs">
           {subjects.map((sub, idx) => (
             <button class={`tab-btn ${idx === 0 ? 'active' : ''}`} data-subject={sub.id}>
@@ -314,10 +310,8 @@ const searchIndex = allExams.map((exam) => ({
           ))}
         </nav>
 
-        <!-- 과목별 컨텐츠 영역 -->
         {subjects.map((sub, sIdx) => (
           <section id={`subject-${sub.id}`} class={`panel ${sIdx === 0 ? 'active' : ''}`}>
-            <!-- 시험 구분 서브 탭 -->
             <div class="type-tabs">
               {sub.types.map((t, tIdx) => (
                 <button 
@@ -329,7 +323,6 @@ const searchIndex = allExams.map((exam) => ({
               ))}
             </div>
 
-            <!-- 연도별 문제 그리드 -->
             {sub.types.map((t, tIdx) => (
               <div id={`grid-${sub.id}-${t.id}`} class={`panel ${tIdx === 0 ? 'active' : ''}`}>
                 <div class="year-list">
@@ -363,13 +356,11 @@ const searchIndex = allExams.map((exam) => ({
       </footer>
     </div>
 
-    <!-- 검색용 데이터 전달 -->
     <script define:vars={{ searchIndex }}>
       window.__SEARCH_INDEX__ = searchIndex;
     </script>
 
     <script>
-      // 요소 가져오기
       const searchInput = document.getElementById('search-input');
       const searchBtn = document.getElementById('search-btn');
       const searchResults = document.getElementById('search-results');
@@ -380,28 +371,23 @@ const searchIndex = allExams.map((exam) => ({
 
       const data = window.__SEARCH_INDEX__ || [];
 
-      // 검색 실행 함수
       function performSearch(isInitialLoad = false) {
         const query = searchInput?.value.trim().toLowerCase();
 
-        // 1. 검색어가 비어있는 경우
         if (!query) {
           if (searchResults) searchResults.style.display = 'none';
           if (yearView) yearView.style.display = 'block';
-          // URL에서 쿼리스트링 제거
           if (!isInitialLoad) {
             history.replaceState(null, '', window.location.pathname);
           }
           return;
         }
 
-        // 2. URL에 검색어 동기화 (?q=검색어)
         if (!isInitialLoad) {
           const newUrl = `${window.location.pathname}?q=${encodeURIComponent(searchInput.value.trim())}`;
           history.replaceState(null, '', newUrl);
         }
 
-        // 화면 전환
         if (yearView) yearView.style.display = 'none';
         if (searchResults) searchResults.style.display = 'block';
 
@@ -433,7 +419,6 @@ const searchIndex = allExams.map((exam) => ({
         }
       }
 
-      // 엔터 키 입력 시 검색
       searchInput?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -441,10 +426,8 @@ const searchIndex = allExams.map((exam) => ({
         }
       });
 
-      // 검색 버튼 클릭 시 검색
       searchBtn?.addEventListener('click', () => performSearch());
 
-      // 검색어를 지웠을 때 URL 및 화면 초기화
       searchInput?.addEventListener('input', (e) => {
         if (!e.target.value.trim()) {
           if (searchResults) searchResults.style.display = 'none';
@@ -453,7 +436,6 @@ const searchIndex = allExams.map((exam) => ({
         }
       });
 
-      // 뒤로가기 시 검색 상태 복원 (URL 쿼리스트링 감지)
       window.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
         const initialQuery = params.get('q');
@@ -463,7 +445,6 @@ const searchIndex = allExams.map((exam) => ({
         }
       });
 
-      // 브라우저 뒤로가기/앞으로가기 히스토리 변동 감지
       window.addEventListener('popstate', () => {
         const params = new URLSearchParams(window.location.search);
         const currentQuery = params.get('q') || '';
@@ -473,7 +454,6 @@ const searchIndex = allExams.map((exam) => ({
         }
       });
 
-      // 과목 탭 전환
       const subBtns = document.querySelectorAll('.tab-btn');
       subBtns.forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -485,7 +465,6 @@ const searchIndex = allExams.map((exam) => ({
         });
       });
 
-      // 직렬 서브탭 전환
       const typeBtns = document.querySelectorAll('.type-btn');
       typeBtns.forEach((btn) => {
         btn.addEventListener('click', () => {
