@@ -63,8 +63,8 @@ const searchIndex = allExams.map((exam) => ({
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>전자직·통신직 공무원 기출문제 해설</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>전자직·통신직 공무원 기출문제 해설 & 핵심 개념 요약</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6442138456527170"
      crossorigin="anonymous"></script>
     <style>
@@ -100,6 +100,45 @@ const searchIndex = allExams.map((exam) => ({
         transition: color 0.15s ease;
       }
       .site-title:hover {
+        color: var(--primary);
+      }
+
+      /* 개념 요약 바로가기 배너 스타일 */
+      .concept-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        padding: 1rem 1.3rem;
+        margin-bottom: 2rem;
+        text-decoration: none;
+        color: var(--text-main);
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+      }
+      .concept-banner:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+      }
+      .concept-banner-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #1e40af;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .concept-banner-desc {
+        font-size: 0.85rem;
+        color: #3b82f6;
+        margin-top: 0.2rem;
+      }
+      .concept-banner-arrow {
+        font-size: 1.2rem;
+        font-weight: 700;
         color: var(--primary);
       }
 
@@ -191,6 +230,7 @@ const searchIndex = allExams.map((exam) => ({
         font-size: 0.9rem;
         font-weight: 600;
         transition: all 0.15s;
+        text-align: center;
       }
       .search-item:hover {
         background: var(--primary);
@@ -236,7 +276,6 @@ const searchIndex = allExams.map((exam) => ({
       .panel { display: none; }
       .panel.active { display: block; }
       
-      /* 연도 단위 전체 해설 카드 그리드 */
       .year-overview-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -313,6 +352,19 @@ const searchIndex = allExams.map((exam) => ({
         <p style="color: var(--text-sub); margin-top: 0.4rem;">07~26년도 직렬별 기출 풀이집 (20문항 전 문항 수록)</p>
       </header>
 
+      <!-- [추가] 핵심 개념 요약 바로가기 배너 -->
+      <a href="/concepts" class="concept-banner">
+        <div>
+          <div class="concept-banner-title">
+            <span>📖</span> 시험 빈출 전공 핵심 개념 요약집
+          </div>
+          <div class="concept-banner-desc">
+            테브난 등가회로, 슈퍼헤테로다인, PCM 등 주요 빈출 이론 정리 보러가기
+          </div>
+        </div>
+        <span class="concept-banner-arrow">→</span>
+      </a>
+
       <div class="search-wrapper">
         <input 
           type="text" 
@@ -377,10 +429,9 @@ const searchIndex = allExams.map((exam) => ({
 
       <footer class="site-footer">
         <nav class="links">
+          <a href="/concepts">핵심 개념 요약</a>
           <a href="/about">사이트 소개</a>
           <a href="/privacy">개인정보처리방침</a>
-          <a href="/terms">이용약관 및 면책조항</a>
-          <a href="/contact">오류 제보 및 문의</a>
         </nav>
         <p class="copyright">© 2026 전자직·통신직 공무원 기출 해설 아카이브. All rights reserved.</p>
       </footer>
@@ -413,7 +464,7 @@ const searchIndex = allExams.map((exam) => ({
           return;
         }
 
-        if (!isInitialLoad) {
+        if (!isInitialLoad && searchInput) {
           const newUrl = `${window.location.pathname}?q=${encodeURIComponent(searchInput.value.trim())}`;
           history.replaceState(null, '', newUrl);
         }
@@ -438,10 +489,8 @@ const searchIndex = allExams.map((exam) => ({
           if (searchGrid) {
             searchGrid.innerHTML = filtered
               .map((q) => {
-                // 직렬 및 과목 ID 매핑
                 const subjectId = q.subject === '전자공학개론' ? 'electronics' : q.subject === '무선공학개론' ? 'wireless' : 'communication';
                 const typeId = q.examType === '국가직' ? 'national' : 'local';
-                // 연도별 종합 페이지의 특정 문제 앵커로 이동
                 return `
                   <a href="/exams/${subjectId}/${typeId}/${q.year}#q-${q.questionNumber}" class="search-item">
                     ${q.year} ${q.examType} ${q.subject} ${q.questionNumber}번

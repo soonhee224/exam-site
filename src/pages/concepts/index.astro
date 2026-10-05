@@ -1,0 +1,101 @@
+---
+import { getCollection } from 'astro:content';
+
+const allConcepts = await getCollection('concepts');
+
+// 최신 수정일순 정렬
+const sortedConcepts = allConcepts.sort((a, b) => {
+  const dateA = a.data.updatedAt || '';
+  const dateB = b.data.updatedAt || '';
+  return dateB.localeCompare(dateA);
+});
+---
+
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>핵심 전공 개념 요약집 | 전자직·통신직</title>
+    <style>
+      :root {
+        --primary: #2563eb;
+        --bg-color: #f8fafc;
+        --card-bg: #ffffff;
+        --text-main: #0f172a;
+        --text-sub: #64748b;
+        --border-color: #e2e8f0;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        padding: 2.5rem 1rem;
+        line-height: 1.6;
+      }
+      .container { max-width: 840px; margin: 0 auto; }
+      .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--primary); text-decoration: none; font-weight: 600; }
+      header { margin-bottom: 2rem; }
+      h1 { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
+      .desc { color: var(--text-sub); font-size: 1rem; }
+
+      .concept-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      .concept-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.4rem;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+        display: block;
+      }
+      .concept-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+      }
+      .card-meta { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+      .badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: #eff6ff;
+        color: var(--primary);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+      }
+      .card-title { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; }
+      .card-summary { font-size: 0.95rem; color: #475569; line-height: 1.5; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="/" class="back-link">← 메인 홈으로</a>
+
+      <header>
+        <h1>핵심 전공 개념 요약</h1>
+        <p class="desc">시험에 매년 반복 출제되는 전자공학·통신공학 핵심 이론 완벽 정리</p>
+      </header>
+
+      <main class="concept-grid">
+        {sortedConcepts.map((item) => {
+          const cleanSlug = (item.slug || item.id || '').replace(/\.md$/, '');
+          return (
+            <a href={`/concepts/${cleanSlug}`} class="concept-card">
+              <div class="card-meta">
+                <span class="badge">{item.data.subject}</span>
+                {item.data.category && <span class="badge" style="background: #f1f5f9; color: #475569;">{item.data.category}</span>}
+              </div>
+              <div class="card-title">{item.data.title}</div>
+              {item.data.summary && <div class="card-summary">{item.data.summary}</div>}
+            </a>
+          );
+        })}
+      </main>
+    </div>
+  </body>
+</html>

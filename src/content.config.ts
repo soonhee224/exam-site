@@ -1,6 +1,7 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
+// 1. 기존 기출문제 컬렉션
 const examsCollection = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/exams' }),
   schema: z.object({
@@ -9,15 +10,28 @@ const examsCollection = defineCollection({
     year: z.number().min(2007).max(2026),
     questionNumber: z.number().min(1).max(20),
     title: z.string(),
-    // 정답 번호 범위를 5번까지 허용
     answer: z.number().min(1).max(5),
-    // 4지선다와 5지선다를 모두 허용하도록 최소 2개 이상으로 변경
     options: z.array(z.string()).min(2),
-    explanation: z.string().optional(), // 상세 해설
+    explanation: z.string().optional(),
     chapter: z.string().optional(),
   }),
 });
 
+// 2. [추가] 개념 정리 컬렉션 정의
+const conceptsCollection = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/concepts' }),
+  schema: z.object({
+    title: z.string(),
+    subject: z.string(),
+    category: z.string().optional(),
+    updatedAt: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    summary: z.string().optional(),
+  }),
+});
+
+// 3. concepts를 collections 객체에 추가 등록
 export const collections = {
   exams: examsCollection,
+  concepts: conceptsCollection,
 };
