@@ -31,15 +31,12 @@ const baseYears = Array.from({ length: 2026 - 2007 + 1 }, (_, i) => 2026 - i);
 
 // 과목 및 직렬별 유효 연도 반환 함수
 const getYearsForSubjectAndType = (subjectId: string, typeId: string) => {
-  // 무선공학개론 연도 목록
   if (subjectId === 'wireless') {
     return [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009, 2008, 2007];
   }
-  // 통신이론 지방직 연도 목록 (2007~2026)
   if (subjectId === 'communication') {
     return [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2011, 2010, 2009];
   }
-  // 전자공학개론 지방직은 2007, 2008, 2013 제외
   if (subjectId === 'electronics' && typeId === 'local') {
     const excluded = [2007, 2008, 2013];
     return baseYears.filter((yr) => !excluded.includes(yr));
@@ -73,6 +70,7 @@ const searchIndex = allExams.map((exam) => ({
     <style>
       :root {
         --primary: #2563eb;
+        --primary-hover: #1d4ed8;
         --bg-color: #f8fafc;
         --card-bg: #ffffff;
         --text-main: #0f172a;
@@ -146,8 +144,8 @@ const searchIndex = allExams.map((exam) => ({
       }
 
       .search-btn:hover {
-        background-color: #1d4ed8;
-        border-color: #1d4ed8;
+        background-color: var(--primary-hover);
+        border-color: var(--primary-hover);
       }
       .search-btn:active {
         transform: scale(0.97);
@@ -238,35 +236,70 @@ const searchIndex = allExams.map((exam) => ({
       .panel { display: none; }
       .panel.active { display: block; }
       
-      .year-list { display: flex; flex-direction: column; gap: 1rem; }
-      .year-card {
+      /* 연도 단위 전체 해설 카드 그리드 */
+      .year-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.85rem;
+      }
+      .year-full-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         background: var(--card-bg);
         border: 1px solid var(--border-color);
-        border-radius: 10px;
-        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        padding: 1.1rem 1.25rem;
+        text-decoration: none;
+        color: var(--text-main);
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
       }
-      .year-title { font-weight: 700; color: #334155; margin-bottom: 0.75rem; display: block; }
-      .question-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.4rem; }
-      .q-btn {
-        display: flex; align-items: center; justify-content: center;
-        height: 36px; background: #f1f5f9; color: #475569;
-        text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.9rem;
+      .year-full-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
       }
-      .q-btn:hover { background: var(--primary); color: white; }
+      .year-full-card .card-main-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      .year-full-card .card-badge {
+        font-size: 0.8rem;
+        font-weight: 600;
+        background-color: #eff6ff;
+        color: var(--primary);
+        padding: 0.35rem 0.65rem;
+        border-radius: 6px;
+        border: 1px solid #dbeafe;
+      }
 
       .site-footer {
-        margin-top: 3rem;
+        margin-top: 3.5rem;
         padding-top: 1.5rem;
         border-top: 1px solid var(--border-color);
         text-align: center;
         font-size: 0.85rem;
         color: var(--text-sub);
       }
-      .site-footer .links { margin-bottom: 0.5rem; }
-      .site-footer a { color: var(--primary); text-decoration: none; }
+      .site-footer .links {
+        display: flex;
+        justify-content: center;
+        gap: 1.2rem;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .site-footer a {
+        color: var(--primary);
+        text-decoration: none;
+      }
+      .site-footer a:hover {
+        text-decoration: underline;
+      }
 
       @media (max-width: 640px) {
-        .question-grid { grid-template-columns: repeat(5, 1fr); }
+        .year-overview-grid { grid-template-columns: 1fr; }
         .search-grid { grid-template-columns: 1fr; }
       }
     </style>
@@ -277,7 +310,7 @@ const searchIndex = allExams.map((exam) => ({
         <h1>
           <a href="/" class="site-title">전자직·통신직 기출문제 풀이 & 해설</a>
         </h1>
-        <p style="color: var(--text-sub); margin-top: 0.4rem;">07~26년도 직렬별 기출 풀이집</p>
+        <p style="color: var(--text-sub); margin-top: 0.4rem;">07~26년도 직렬별 기출 풀이집 (20문항 전 문항 수록)</p>
       </header>
 
       <div class="search-wrapper">
@@ -325,21 +358,15 @@ const searchIndex = allExams.map((exam) => ({
 
             {sub.types.map((t, tIdx) => (
               <div id={`grid-${sub.id}-${t.id}`} class={`panel ${tIdx === 0 ? 'active' : ''}`}>
-                <div class="year-list">
+                <div class="year-overview-grid">
                   {getYearsForSubjectAndType(sub.id, t.id).map((yr) => (
-                    <div class="year-card">
-                      <span class="year-title">{yr}년도 {sub.name} ({t.name})</span>
-                      <div class="question-grid">
-                        {Array.from({ length: 20 }, (_, i) => i + 1).map((qNum) => {
-                          const paddedQ = String(qNum).padStart(2, '0');
-                          return (
-                            <a href={`/exams/${sub.id}/${t.id}/${yr}-${paddedQ}`} class="q-btn">
-                              {qNum}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <a 
+                      href={`/exams/${sub.id}/${t.id}/${yr}`} 
+                      class="year-full-card"
+                    >
+                      <span class="card-main-title">{yr}년 {sub.name} ({t.name})</span>
+                      <span class="card-badge">1~20번 전 문항 풀이</span>
+                    </a>
                   ))}
                 </div>
               </div>
@@ -349,10 +376,13 @@ const searchIndex = allExams.map((exam) => ({
       </div>
 
       <footer class="site-footer">
-        <p class="links">
+        <nav class="links">
+          <a href="/about">사이트 소개</a>
           <a href="/privacy">개인정보처리방침</a>
-        </p>
-        <p class="copyright">© 2026 전기·전자·통신 공무원 기출 해설. All rights reserved.</p>
+          <a href="/terms">이용약관 및 면책조항</a>
+          <a href="/contact">오류 제보 및 문의</a>
+        </nav>
+        <p class="copyright">© 2026 전자직·통신직 공무원 기출 해설 아카이브. All rights reserved.</p>
       </footer>
     </div>
 
@@ -407,13 +437,17 @@ const searchIndex = allExams.map((exam) => ({
 
           if (searchGrid) {
             searchGrid.innerHTML = filtered
-              .map(
-                (q) => `
-                  <a href="/exams/${q.id}" class="search-item">
+              .map((q) => {
+                // 직렬 및 과목 ID 매핑
+                const subjectId = q.subject === '전자공학개론' ? 'electronics' : q.subject === '무선공학개론' ? 'wireless' : 'communication';
+                const typeId = q.examType === '국가직' ? 'national' : 'local';
+                // 연도별 종합 페이지의 특정 문제 앵커로 이동
+                return `
+                  <a href="/exams/${subjectId}/${typeId}/${q.year}#q-${q.questionNumber}" class="search-item">
                     ${q.year} ${q.examType} ${q.subject} ${q.questionNumber}번
                   </a>
-                `
-              )
+                `;
+              })
               .join('');
           }
         }
