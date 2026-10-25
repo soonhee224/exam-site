@@ -9,6 +9,16 @@ const sortedConcepts = allConcepts.sort((a, b) => {
   const dateB = b.data.updatedAt || '';
   return dateB.localeCompare(dateA);
 });
+
+// 클라이언트 사이드 검색 및 페이징을 위한 인덱스 데이터 구성
+const conceptsIndex = sortedConcepts.map((item) => ({
+  title: item.data.title,
+  summary: item.data.summary || '',
+  subject: item.data.subject,
+  category: item.data.category || '',
+  body: item.body || '',
+  slug: (item.slug || item.id || '').replace(/\.md$/, ''),
+}));
 ---
 
 <html lang="ko">
@@ -37,18 +47,41 @@ const sortedConcepts = allConcepts.sort((a, b) => {
       .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--primary); text-decoration: none; font-weight: 600; }
       header { margin-bottom: 2rem; }
       h1 { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
-      .desc { color: var(--text-sub); font-size: 1rem; }
+      .desc { color: var(--text-sub); font-size: 1rem; margin-bottom: 1.5rem; }
+
+      /* 검색창 스타일 */
+      .search-wrapper {
+        display: flex;
+        align-items: stretch;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+      }
+      .search-input {
+        flex: 1;
+        padding: 0.85rem 1.2rem;
+        font-size: 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--text-main);
+        outline: none;
+        transition: all 0.2s;
+      }
+      .search-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
 
       .concept-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 1rem;
+        gap: 0.75rem;
       }
       .concept-card {
         background: var(--card-bg);
         border: 1px solid var(--border-color);
         border-radius: 12px;
-        padding: 1.4rem;
+        padding: 1.1rem 1.4rem;
         text-decoration: none;
         color: inherit;
         transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
@@ -59,17 +92,53 @@ const sortedConcepts = allConcepts.sort((a, b) => {
         border-color: var(--primary);
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
       }
-      .card-meta { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+      .card-meta { display: flex; gap: 0.5rem; margin-bottom: 0.3rem; }
       .badge {
         font-size: 0.75rem;
         font-weight: 700;
         background: #eff6ff;
         color: var(--primary);
-        padding: 0.2rem 0.5rem;
+        padding: 0.15rem 0.4rem;
         border-radius: 4px;
       }
-      .card-title { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; }
-      .card-summary { font-size: 0.95rem; color: #475569; line-height: 1.5; }
+      .card-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+      
+      .no-results {
+        padding: 2rem;
+        text-align: center;
+        color: var(--text-sub);
+        background: var(--card-bg);
+        border-radius: 12px;
+        border: 1px dashed var(--border-color);
+        display: none;
+      }
+
+      /* 페이지네이션 스타일 */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.4rem;
+        margin-top: 2.5rem;
+      }
+      .page-btn {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        padding: 0.5rem 0.9rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .page-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .page-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
     </style>
   </head>
   <body>
@@ -79,23 +148,130 @@ const sortedConcepts = allConcepts.sort((a, b) => {
       <header>
         <h1>핵심 전공 개념 요약</h1>
         <p class="desc">시험에 매년 반복 출제되는 전자공학·통신공학 핵심 이론 완벽 정리</p>
+        
+        <!-- 검색창 -->
+        <div class="search-wrapper">
+          <input 
+            type="text" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="제목, 과목 또는 내용 키워드 검색 (예: 테브난, PCM, 변조)" 
+            autocomplete="off"
+          />
+        </div>
       </header>
 
-      <main class="concept-grid">
-        {sortedConcepts.map((item) => {
+      <div id="no-results" class="no-results">
+        검색 결과가 없습니다.
+      </div>
+
+      <main class="concept-grid" id="concept-grid">
+        {sortedConcepts.map((item, index) => {
           const cleanSlug = (item.slug || item.id || '').replace(/\.md$/, '');
           return (
-            <a href={`/concepts/${cleanSlug}`} class="concept-card">
+            <a href={`/concepts/${cleanSlug}`} class="concept-card" data-index={index}>
               <div class="card-meta">
                 <span class="badge">{item.data.subject}</span>
                 {item.data.category && <span class="badge" style="background: #f1f5f9; color: #475569;">{item.data.category}</span>}
               </div>
               <div class="card-title">{item.data.title}</div>
-              {item.data.summary && <div class="card-summary">{item.data.summary}</div>}
             </a>
           );
         })}
       </main>
+
+      <!-- 페이지네이션 버튼 영역 -->
+      <nav class="pagination" id="pagination"></nav>
     </div>
+
+    <script define:vars={{ conceptsIndex }}>
+      window.__CONCEPTS_INDEX__ = conceptsIndex;
+    </script>
+
+    <script>
+      const searchInput = document.getElementById('search-input');
+      const noResults = document.getElementById('no-results');
+      const paginationContainer = document.getElementById('pagination');
+      const cards = Array.from(document.querySelectorAll('.concept-card'));
+      const data = window.__CONCEPTS_INDEX__ || [];
+
+      const itemsPerPage = 7; // 한 페이지당 7개씩 표시
+      let currentPage = 1;
+      let filteredIndices = data.map((_, i) => i);
+
+      function updateView() {
+        const query = searchInput.value.trim().toLowerCase();
+        const keywords = query.split(/\s+/).filter(Boolean);
+
+        // 1. 검색어 필터링
+        if (keywords.length === 0) {
+          filteredIndices = data.map((_, i) => i);
+        } else {
+          filteredIndices = [];
+          data.forEach((item, index) => {
+            const targetText = `${item.title} ${item.summary} ${item.subject} ${item.category} ${item.body}`.toLowerCase();
+            const matches = keywords.every(kw => targetText.includes(kw));
+            if (matches) {
+              filteredIndices.push(index);
+            }
+          });
+        }
+
+        // 전체 페이지 수 계산
+        const totalPages = Math.ceil(filteredIndices.length / itemsPerPage) || 1;
+        if (currentPage > totalPages) {
+          currentPage = 1;
+        }
+
+        // 2. 현재 페이지에 해당하는 인덱스 추출
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const currentIndices = new Set(filteredIndices.slice(startIndex, endIndex));
+
+        // 3. 카드 표시 여부 결정
+        cards.forEach((card, index) => {
+          if (currentIndices.has(index)) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        // 결과 없음 안내 및 페이지네이션 버튼 렌더링
+        if (filteredIndices.length === 0) {
+          noResults.style.display = 'block';
+          paginationContainer.style.display = 'none';
+        } else {
+          noResults.style.display = 'none';
+          paginationContainer.style.display = 'flex';
+          renderPagination(totalPages);
+        }
+      }
+
+      function renderPagination(totalPages) {
+        paginationContainer.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        for (let i = 1; i <= totalPages; i++) {
+          const btn = document.createElement('button');
+          btn.textContent = i;
+          btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+          btn.addEventListener('click', () => {
+            currentPage = i;
+            updateView();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+          paginationContainer.appendChild(btn);
+        }
+      }
+
+      searchInput.addEventListener('input', () => {
+        currentPage = 1; // 검색어 입력 시 1페이지로 초기화
+        updateView();
+      });
+
+      // 최초 실행
+      updateView();
+    </script>
   </body>
 </html>

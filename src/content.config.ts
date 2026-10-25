@@ -17,7 +17,7 @@ const examsCollection = defineCollection({
   }),
 });
 
-// 2. [추가] 개념 정리 컬렉션 정의
+// 2. 개념 정리 컬렉션 정의
 const conceptsCollection = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/concepts' }),
   schema: z.object({
@@ -30,8 +30,21 @@ const conceptsCollection = defineCollection({
   }),
 });
 
-// 3. concepts를 collections 객체에 추가 등록
+// 3. [추가] AI 가이드 컬렉션 정의
+const aiGuideCollection = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/ai-guide' }),
+  schema: z.object({
+    title: z.string(),
+    category: z.string().optional(),
+    summary: z.string().optional(),
+    updatedAt: z.string().optional(),
+    tags: z.array(z.string()).optional(), // ← 이 줄을 꼭 추가해 주세요!
+  }),
+});
+
+// 4. collections 객체에 ai-guide 추가 등록
 export const collections = {
   exams: examsCollection,
   concepts: conceptsCollection,
+  'ai-guide': aiGuideCollection,
 };

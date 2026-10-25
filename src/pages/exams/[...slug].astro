@@ -198,8 +198,7 @@ const pageTitle = `${year}년 ${targetSubject} (${targetType}) 기출문제 및 
   <body>
     <div class="container">
       <header>
-        <a href="/" class="back-link">← 목록으로 돌아가기</a>
-        <h1>{year}년 {targetSubject} ({targetType})</h1>
+        <a href="/exams" class="back-link">← 목록으로 돌아가기</a>        <h1>{year}년 {targetSubject} ({targetType})</h1>
         <p style="color: var(--text-sub); margin-top: 0.4rem;">
           {hasData ? `총 ${currentExams.length}문항 전체 풀이 및 단계별 해설` : '해당 연도의 기출문제 데이터를 준비 중입니다.'}
         </p>
